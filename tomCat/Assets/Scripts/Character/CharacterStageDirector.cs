@@ -33,6 +33,7 @@ public class CharacterStageDirector : MonoBehaviour
     Camera _cam;
     CharacterWavePlayer _wave;
     TomCatIdleMotion _idle;
+    TomRepeatLoop _voice;
     GameObject _blobShadow;
 
     void Awake()
@@ -41,6 +42,8 @@ public class CharacterStageDirector : MonoBehaviour
         EnsureRoom();
         HideLegacyGround();
         SetupKeyLight();
+        _voice = TomRepeatLoop.Ensure();
+        _voice.characterObjectName = characterObjectName;
     }
 
     void Start()
@@ -67,6 +70,7 @@ public class CharacterStageDirector : MonoBehaviour
         if (_character == null)
         {
             Debug.LogWarning("[Stage] 找不到角色 " + characterObjectName, this);
+            ArmVoice();
             yield break;
         }
 
@@ -104,6 +108,16 @@ public class CharacterStageDirector : MonoBehaviour
             _idle.ResolveTargets();
             _idle.IsActive = true;
         }
+
+        ArmVoice();
+    }
+
+    void ArmVoice()
+    {
+        if (_voice == null)
+            _voice = TomRepeatLoop.Ensure();
+        _voice.characterObjectName = characterObjectName;
+        _voice.Arm();
     }
 
     void LateUpdate()

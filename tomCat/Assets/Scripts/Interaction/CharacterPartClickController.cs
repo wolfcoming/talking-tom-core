@@ -96,6 +96,12 @@ public class CharacterPartClickController : MonoBehaviour
             BodyPartType.Foot,
             new Vector3(localCenter.x, localCenter.y - height * (0.5f - footHeightRatio * 0.5f), localCenter.z),
             horiz * footRadiusRatio * 0.5f);
+
+        CreateBoxHitbox(
+            "Hitbox_Body",
+            BodyPartType.Body,
+            new Vector3(localCenter.x, localCenter.y - height * 0.02f, localCenter.z),
+            new Vector3(horiz * 0.85f, height * 0.42f, horiz * 0.7f));
     }
 
     void CreateSphereHitbox(string name, BodyPartType part, Vector3 localPos, float localRadius)
@@ -121,6 +127,39 @@ public class CharacterPartClickController : MonoBehaviour
             col = go.AddComponent<SphereCollider>();
         col.isTrigger = false;
         col.radius = Mathf.Max(0.01f, localRadius);
+
+        var hitbox = go.GetComponent<BodyPartHitbox>();
+        if (hitbox == null)
+            hitbox = go.AddComponent<BodyPartHitbox>();
+        hitbox.part = part;
+    }
+
+    void CreateBoxHitbox(string name, BodyPartType part, Vector3 localPos, Vector3 size)
+    {
+        var existing = transform.Find(name);
+        GameObject go;
+        if (existing != null)
+        {
+            go = existing.gameObject;
+        }
+        else
+        {
+            go = new GameObject(name);
+            go.transform.SetParent(transform, false);
+        }
+
+        go.transform.localPosition = localPos;
+        go.transform.localRotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
+
+        var col = go.GetComponent<BoxCollider>();
+        if (col == null)
+            col = go.AddComponent<BoxCollider>();
+        col.isTrigger = false;
+        col.size = new Vector3(
+            Mathf.Max(0.05f, size.x),
+            Mathf.Max(0.05f, size.y),
+            Mathf.Max(0.05f, size.z));
 
         var hitbox = go.GetComponent<BodyPartHitbox>();
         if (hitbox == null)
@@ -166,6 +205,13 @@ public class CharacterPartClickController : MonoBehaviour
         if (_cam == null)
             return;
 
+        if (TomRepeatLoop.HudGuiRect.width > 1f)
+        {
+            var guiPos = new Vector2(screenPos.x, Screen.height - screenPos.y);
+            if (TomRepeatLoop.HudGuiRect.Contains(guiPos))
+                return;
+        }
+
         var ray = _cam.ScreenPointToRay(screenPos);
         if (!Physics.Raycast(ray, out var hit, 100f))
             return;
@@ -184,8 +230,24 @@ public class CharacterPartClickController : MonoBehaviour
 
     void HandlePartClicked(BodyPartType part)
     {
+        var loop = TomRepeatLoop.Instance;
+        if (loop != null && loop.TryInterrupt())
+        {
+            ShowHint("戳了一下，复读停下");
+            if (logClicks)
+                Debug.Log("[CharacterPartClick] interrupt repeat", this);
+            return;
+        }
+
         switch (part)
         {
+            case BodyPartType.Body:
+                if (loop != null)
+                    loop.NudgePoke();
+                ShowHint("点到了：身体");
+                if (logClicks)
+                    Debug.Log("[CharacterPartClick] Body", this);
+                break;
             case BodyPartType.Head:
                 onHeadClicked?.Invoke();
                 var idle = GetComponent<TomCatIdleMotion>();
@@ -234,6 +296,20 @@ public class CharacterPartClickController : MonoBehaviour
     {
         DrawHitboxGizmo("Hitbox_Head", new Color(1f, 0.4f, 0.2f, 0.35f));
         DrawHitboxGizmo("Hitbox_Foot", new Color(0.2f, 0.7f, 1f, 0.35f));
+        DrawBodyGizmo();
+    }
+
+    void DrawBodyGizmo()
+    {
+        var t = transform.Find("Hitbox_Body");
+        if (t == null)
+            return;
+        var col = t.GetComponent<BoxCollider>();
+        if (col == null)
+            return;
+        Gizmos.color = new Color(0.3f, 0.85f, 0.4f, 0.25f);
+        Gizmos.matrix = t.localToWorldMatrix;
+        Gizmos.DrawCube(col.center, col.size);
     }
 
     void DrawHitboxGizmo(string name, Color color)

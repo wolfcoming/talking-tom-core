@@ -2,5 +2,6 @@
 public enum BodyPartType
 {
     Head,
-    Foot
+    Foot,
+    Body
 }
