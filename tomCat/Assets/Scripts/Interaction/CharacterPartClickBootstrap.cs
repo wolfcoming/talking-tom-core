@@ -5,14 +5,17 @@ using UnityEngine;
 /// </summary>
 public class CharacterPartClickBootstrap : MonoBehaviour
 {
-    public string characterObjectName = "LittleGirl";
+    public string characterObjectName = "Robot";
 
     void Awake()
     {
         var character = GameObject.Find(characterObjectName);
         if (character == null)
+            character = GameObject.Find("LittleGirl");
+
+        if (character == null)
         {
-            Debug.LogWarning($"[CharacterPartClick] 场景里找不到名为 {characterObjectName} 的物体。", this);
+            Debug.LogWarning($"[CharacterPartClick] 场景里找不到角色（期望名：{characterObjectName}）。", this);
             return;
         }
 
