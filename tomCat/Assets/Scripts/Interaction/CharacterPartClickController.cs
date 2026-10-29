@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -187,9 +188,18 @@ public class CharacterPartClickController : MonoBehaviour
         {
             case BodyPartType.Head:
                 onHeadClicked?.Invoke();
-                ShowHint("点到了：头");
+                var idle = GetComponent<TomCatIdleMotion>();
+                if (idle != null)
+                    idle.IsActive = false;
+                var wave = GetComponent<CharacterWavePlayer>();
+                if (wave == null)
+                    wave = gameObject.AddComponent<CharacterWavePlayer>();
+                wave.PlayWave();
+                if (idle != null)
+                    StartCoroutine(ResumeIdleAfterWave(wave, idle));
+                ShowHint(string.IsNullOrEmpty(wave.LastStatus) ? "点到了：头" : wave.LastStatus);
                 if (logClicks)
-                    Debug.Log("[CharacterPartClick] Head", this);
+                    Debug.Log("[CharacterPartClick] Head → Wave", this);
                 break;
             case BodyPartType.Foot:
                 onFootClicked?.Invoke();
@@ -204,6 +214,19 @@ public class CharacterPartClickController : MonoBehaviour
     {
         _hint = text;
         _hintUntil = Time.unscaledTime + 1.2f;
+    }
+
+    static IEnumerator ResumeIdleAfterWave(CharacterWavePlayer wave, TomCatIdleMotion idle)
+    {
+        yield return null;
+        var guard = 0f;
+        while (wave != null && wave.IsPlaying && guard < 5f)
+        {
+            guard += Time.deltaTime;
+            yield return null;
+        }
+        if (idle != null)
+            idle.IsActive = true;
     }
 
 #if UNITY_EDITOR

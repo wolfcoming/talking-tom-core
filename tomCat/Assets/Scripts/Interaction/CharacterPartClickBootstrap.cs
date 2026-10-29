@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 场景启动时给指定角色挂上分区点击。避免手改 Prefab 实例。
+/// 场景启动时挂上点击、挥手，并启动舞台导演（房间/相机/开场挥手/待机）。
 /// </summary>
 public class CharacterPartClickBootstrap : MonoBehaviour
 {
@@ -16,10 +16,25 @@ public class CharacterPartClickBootstrap : MonoBehaviour
         if (character == null)
         {
             Debug.LogWarning($"[CharacterPartClick] 场景里找不到角色（期望名：{characterObjectName}）。", this);
-            return;
+        }
+        else
+        {
+            if (character.GetComponent<CharacterPartClickController>() == null)
+                character.AddComponent<CharacterPartClickController>();
+
+            if (character.GetComponent<CharacterWavePlayer>() == null)
+                character.AddComponent<CharacterWavePlayer>();
+
+            if (character.GetComponent<TomCatIdleMotion>() == null)
+                character.AddComponent<TomCatIdleMotion>();
         }
 
-        if (character.GetComponent<CharacterPartClickController>() == null)
-            character.AddComponent<CharacterPartClickController>();
+        var director = FindObjectOfType<CharacterStageDirector>();
+        if (director == null)
+        {
+            var go = new GameObject("CharacterStageDirector");
+            director = go.AddComponent<CharacterStageDirector>();
+        }
+        director.characterObjectName = characterObjectName;
     }
 }
